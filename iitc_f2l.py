@@ -25,10 +25,10 @@ def normalize(objs):
 
 	
 def f2l(src):
-	dest = []
 	def buildLink(a, b, color):
 		return {"type" : "polyline", "latLngs": [a, b], "color":color}
 		
+	dest = []
 	for obj in eval(src):
 		if obj["type"] == "polygon":
 			vertices = obj["latLngs"]
@@ -55,9 +55,9 @@ class Autotest(unittest.TestCase):
 		inp = '[{"type":"polygon","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}]'
 		exp ='[{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}]'
 		self.assertEquals(f2l(inp), exp)
-		
-if __name__ == "__main__":
 
+
+if __name__ == "__main__":
 	if len(sys.argv) < 2:
 		print "Test Mode  (please supply input file for real mode"
 		unittest.main()
