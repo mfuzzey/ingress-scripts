@@ -43,6 +43,9 @@ def f2l(src, args):
 		skipTypes.append("marker")
 		
 	dest = []
+	in_fields = 0
+	in_links = 0
+	in_multi_links = 0
 	for obj in eval(src):
 		objType = obj["type"]
 		if objType in skipTypes:
@@ -54,9 +57,25 @@ def f2l(src, args):
 			dest.append(buildLink(vertices[0], vertices[1], color))
 			dest.append(buildLink(vertices[0], vertices[2], color))
 			dest.append(buildLink(vertices[1], vertices[2], color))
+			in_fields += 1
+		elif objType == "polyline":
+			vertices = obj["latLngs"]
+			if len(vertices) > 2:
+				print len(vertices)
+				color = obj["color"]
+				for i in xrange(len(vertices) - 1):
+					if vertices[i] != vertices[i+1]:
+						dest.append(buildLink(vertices[i], vertices[i+1], color))
+						in_multi_links += 1
+			else:
+				in_links += 1
+				dest.append(obj)
 		else:
 			dest.append(obj)
+
+	print "IN: %d fields %d links %d multi links  OUT: %d links" % (in_fields, in_links, in_multi_links, len(dest))
 	return normalize(dest)
+
 	
 
 def buildOptionParser():
@@ -89,6 +108,11 @@ class Autotest(unittest.TestCase):
 		inp = '[{"type":"marker","latLng":{"lat":49.601164,"lng":7.376891},"color":"#c34a6f"},{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}]'
 		exp = '[{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}]'
 		self.assertEquals(f2l(inp, self._mkArgs("--no-markers")), exp)
+
+	def test06_3element_polyline(self):
+		inp = '[{"type":"polyline","latLngs":[{"lat":47.339925,"lng":4.993351},{"lat":50.414767,"lng":2.834338},{"lat":47.167607,"lng":0.245083}],"color":"#a24ac3"}]'
+		exp = '[{"type":"polyline","latLngs":[{"lat":47.339925,"lng":4.993351},{"lat":50.414767,"lng":2.834338}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":50.414767,"lng":2.834338},{"lat":47.167607,"lng":0.245083}],"color":"#a24ac3"}]' 
+		self.assertEquals(f2l(inp, self._mkArgs()), exp)
 
 	def _mkArgs(self, options=""):
 		parser = buildOptionParser()
