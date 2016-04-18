@@ -73,8 +73,22 @@ def f2l(src, args):
 		else:
 			dest.append(obj)
 
-	print "IN: %d fields %d links %d multi links  OUT: %d links" % (in_fields, in_links, in_multi_links, len(dest))
-	return normalize(dest)
+	uniques = []
+	links = {}
+	for obj in dest:
+		if obj["type"] != "polyline":
+			uniques.append(obj)
+			continue
+		a, b = obj["latLngs"]
+		key = [(a["lat"], a["lng"]), (b["lat"], b["lng"])]
+		key.sort()
+		key = tuple(key)
+		if not key in links:
+			links[key] = True
+			uniques.append(obj)
+
+	print "IN: %d fields %d links %d multi links  OUT: %d links (eliminated %d duplicates)" % (in_fields, in_links, in_multi_links, len(uniques), len(dest) - len(uniques))
+	return normalize(uniques)
 
 	
 
@@ -112,6 +126,16 @@ class Autotest(unittest.TestCase):
 	def test06_3element_polyline(self):
 		inp = '[{"type":"polyline","latLngs":[{"lat":47.339925,"lng":4.993351},{"lat":50.414767,"lng":2.834338},{"lat":47.167607,"lng":0.245083}],"color":"#a24ac3"}]'
 		exp = '[{"type":"polyline","latLngs":[{"lat":47.339925,"lng":4.993351},{"lat":50.414767,"lng":2.834338}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":50.414767,"lng":2.834338},{"lat":47.167607,"lng":0.245083}],"color":"#a24ac3"}]' 
+		self.assertEquals(f2l(inp, self._mkArgs()), exp)
+
+	def test07a_removeDuplicates(self):
+		inp = '[{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}, {"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"}]'
+		exp = '[{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}]'
+		self.assertEquals(f2l(inp, self._mkArgs()), exp)
+
+	def test07b_removeDuplicatesInverted(self):
+		inp = '[{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}, {"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":47.264051,"lng":6.052921}],"color":"#a24ac3"}]'
+		exp = '[{"type":"polyline","latLngs":[{"lat":47.264051,"lng":6.052921},{"lat":47.761173,"lng":7.294874}],"color":"#a24ac3"},{"type":"polyline","latLngs":[{"lat":47.761173,"lng":7.294874},{"lat":48.461385,"lng":6.320278}],"color":"#a24ac3"}]'
 		self.assertEquals(f2l(inp, self._mkArgs()), exp)
 
 	def _mkArgs(self, options=""):
